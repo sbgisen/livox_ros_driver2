@@ -279,6 +279,9 @@ else(ROS_EDITION STREQUAL "ROS2")
     src/call_back/livox_lidar_callback.cpp
   )
 
+  add_executable(pointcloud_forwarder src/pointcloud_forwarder.cpp)
+  ament_target_dependencies(pointcloud_forwarder rclcpp sensor_msgs)
+
   target_include_directories(${PROJECT_NAME} PRIVATE ${livox_sdk_INCLUDE_DIRS})
 
   # get include directories of custom msg headers
@@ -332,5 +335,7 @@ else(ROS_EDITION STREQUAL "ROS2")
     config
     launch_ROS2
   )
+
+  install(TARGETS pointcloud_forwarder DESTINATION lib/${PROJECT_NAME})
 
 endif()
