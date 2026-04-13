@@ -62,13 +62,18 @@ Lddc::Lddc(int format, int multi_topic, int data_src, int output_type,
 }
 #elif defined BUILDING_ROS2
 Lddc::Lddc(int format, int multi_topic, int data_src, int output_type,
-           double frq, std::string &frame_id)
+           double frq, std::string &frame_id, std::string qos_history,
+           int qos_depth, std::string qos_reliability, std::string qos_durability)
     : transfer_format_(format),
       use_multi_topic_(multi_topic),
       data_src_(data_src),
       output_type_(output_type),
       publish_frq_(frq),
-      frame_id_(frame_id) {
+      frame_id_(frame_id),
+      qos_history_(qos_history),
+      qos_depth_(qos_depth),
+      qos_reliability_(qos_reliability),
+      qos_durability_(qos_durability) {
   publish_period_ns_ = kNsPerSecond / publish_frq_;
   lds_ = nullptr;
 #if 0
@@ -526,27 +531,53 @@ void Lddc::PublishImuData(LidarImuDataQueue& imu_data_queue, const uint8_t index
 #ifdef BUILDING_ROS2
 std::shared_ptr<rclcpp::PublisherBase> Lddc::CreatePublisher(uint8_t msg_type,
     std::string &topic_name, uint32_t queue_size) {
+    // Build QoS profile from configuration
+    rclcpp::QoS qos_profile(qos_depth_);
+
+    // Set history policy
+    if (qos_history_ == "keep_all") {
+      qos_profile.keep_all();
+    } else {
+      qos_profile.keep_last(qos_depth_);
+    }
+
+    // Set reliability
+    if (qos_reliability_ == "reliable") {
+      qos_profile.reliable();
+    } else if (qos_reliability_ == "best_effort") {
+      qos_profile.best_effort();
+    }
+
+    // Set durability
+    if (qos_durability_ == "transient_local") {
+      qos_profile.transient_local();
+    } else if (qos_durability_ == "volatile") {
+      qos_profile.durability_volatile();
+    }
+
     if (kPointCloud2Msg == msg_type) {
       DRIVER_INFO(*cur_node_,
-          "%s publish use PointCloud2 format", topic_name.c_str());
-      return cur_node_->create_publisher<PointCloud2>(topic_name, queue_size);
+          "%s publish use PointCloud2 format with QoS: reliability=%s, durability=%s, depth=%d",
+          topic_name.c_str(), qos_reliability_.c_str(), qos_durability_.c_str(), qos_depth_);
+      return cur_node_->create_publisher<PointCloud2>(topic_name, qos_profile);
     } else if (kLivoxCustomMsg == msg_type) {
       DRIVER_INFO(*cur_node_,
-          "%s publish use livox custom format", topic_name.c_str());
-      return cur_node_->create_publisher<CustomMsg>(topic_name, queue_size);
+          "%s publish use livox custom format with QoS: reliability=%s, durability=%s, depth=%d",
+          topic_name.c_str(), qos_reliability_.c_str(), qos_durability_.c_str(), qos_depth_);
+      return cur_node_->create_publisher<CustomMsg>(topic_name, qos_profile);
     }
 #if 0
     else if (kPclPxyziMsg == msg_type)  {
       DRIVER_INFO(*cur_node_,
           "%s publish use pcl PointXYZI format", topic_name.c_str());
-      return cur_node_->create_publisher<PointCloud>(topic_name, queue_size);
+      return cur_node_->create_publisher<PointCloud>(topic_name, qos_profile);
     }
 #endif
     else if (kLivoxImuMsg == msg_type)  {
       DRIVER_INFO(*cur_node_,
-          "%s publish use imu format", topic_name.c_str());
-      return cur_node_->create_publisher<ImuMsg>(topic_name,
-          queue_size);
+          "%s publish use imu format with QoS: reliability=%s, durability=%s, depth=%d",
+          topic_name.c_str(), qos_reliability_.c_str(), qos_durability_.c_str(), qos_depth_);
+      return cur_node_->create_publisher<ImuMsg>(topic_name, qos_profile);
     } else {
       PublisherPtr null_publisher(nullptr);
       return null_publisher;
