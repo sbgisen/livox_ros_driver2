@@ -135,6 +135,10 @@ DriverNode::DriverNode(const rclcpp::NodeOptions & node_options)
   this->declare_parameter("output_data_type", output_type);
   this->declare_parameter("frame_id", "frame_default");
   this->declare_parameter("user_config_path", "path_default");
+  this->declare_parameter("qos_history", "keep_last");
+  this->declare_parameter("qos_depth", 10);
+  this->declare_parameter("qos_reliability", "best_effort");
+  this->declare_parameter("qos_durability", "volatile");
 
   this->get_parameter("xfer_format", xfer_format);
   this->get_parameter("multi_topic", multi_topic);
@@ -142,6 +146,15 @@ DriverNode::DriverNode(const rclcpp::NodeOptions & node_options)
   this->get_parameter("publish_freq", publish_freq);
   this->get_parameter("output_data_type", output_type);
   this->get_parameter("frame_id", frame_id);
+
+  std::string qos_history = "keep_last";
+  int qos_depth = 10;
+  std::string qos_reliability = "best_effort";
+  std::string qos_durability = "volatile";
+  this->get_parameter("qos_history", qos_history);
+  this->get_parameter("qos_depth", qos_depth);
+  this->get_parameter("qos_reliability", qos_reliability);
+  this->get_parameter("qos_durability", qos_durability);
 
   if (publish_freq > 100.0) {
     publish_freq = 100.0;
@@ -154,7 +167,8 @@ DriverNode::DriverNode(const rclcpp::NodeOptions & node_options)
   future_ = exit_signal_.get_future();
 
   /** Lidar data distribute control and lidar data source set */
-  lddc_ptr_ = std::make_unique<Lddc>(xfer_format, multi_topic, data_src, output_type, publish_freq, frame_id);
+  lddc_ptr_ = std::make_unique<Lddc>(xfer_format, multi_topic, data_src, output_type, publish_freq, frame_id,
+                                      qos_history, qos_depth, qos_reliability, qos_durability);
   lddc_ptr_->SetRosNode(this);
 
   if (data_src == kSourceRawLidar) {
