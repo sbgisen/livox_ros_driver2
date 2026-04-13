@@ -145,13 +145,28 @@ Launch files of ROS are in the "ws_livox/src/livox_ros_driver2/launch_ROS1" dire
 
 ### 3.2 Livox ros driver 2 internal main parameter configuration instructions
 
-All internal parameters of Livox_ros_driver2 are in the launch file. Below are detailed descriptions of the three commonly used parameters :
+All internal parameters of Livox_ros_driver2 are in the launch file. Below are detailed descriptions of the commonly used parameters :
 
 | Parameter    | Detailed description                                         | Default |
 | ------------ | ------------------------------------------------------------ | ------- |
 | publish_freq | Set the frequency of point cloud publish <br>Floating-point data type, recommended values 5.0, 10.0, 20.0, 50.0, etc. The maximum publish frequency is 100.0 Hz.| 10.0    |
 | multi_topic  | If the LiDAR device has an independent topic to publish pointcloud data<br>0 -- All LiDAR devices use the same topic to publish pointcloud data<br>1 -- Each LiDAR device has its own topic to publish point cloud data | 0       |
 | xfer_format  | Set pointcloud format<br>0 -- Livox pointcloud2(PointXYZRTLT) pointcloud format<br>1 -- Livox customized pointcloud format<br>2 -- Standard pointcloud2 (pcl :: PointXYZI) pointcloud format in the PCL library (just for ROS) | 0       |
+| data_src        | Data source selection<br>0 -- lidar<br>others -- Invalid data source | 0             |
+| output_data_type | Output destination for the pointcloud data | 0             |
+| frame_id        | `frame_id` set on the published pointcloud / IMU messages | livox_frame  |
+| user_config_path | Absolute path to the LiDAR JSON config file (see section 4) | (resolved from launch file) |
+
+**QoS parameters (ROS2 only)**
+
+The QoS settings applied to the pointcloud publishers can be configured from the launch file.
+
+| Parameter        | Detailed description                                                                                                   | Default       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------- |
+| qos_history      | History policy of the publisher<br>`keep_last` -- keep only the latest `qos_depth` messages<br>`keep_all` -- keep all messages | keep_last     |
+| qos_depth        | Queue depth used when `qos_history` is `keep_last` (integer)                                                           | 10            |
+| qos_reliability  | Reliability policy<br>`best_effort` -- allow message drops for lower latency<br>`reliable` -- guarantee delivery       | best_effort   |
+| qos_durability   | Durability policy<br>`volatile` -- late-joining subscribers do not receive past messages<br>`transient_local` -- late-joining subscribers receive the last published messages | volatile      |
 
   **Note :**
 
