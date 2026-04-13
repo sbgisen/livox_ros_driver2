@@ -12,6 +12,12 @@ publish_freq  = 10.0 # freqency of publish, 5.0, 10.0, 20.0, 50.0, etc.
 output_type   = 0
 frame_id      = 'livox_frame'
 
+# QoS settings for pointcloud publishers
+qos_history      = 'keep_last'    # 'keep_last' or 'keep_all'
+qos_depth        = 10             # Queue depth for keep_last
+qos_reliability  = 'best_effort'  # 'best_effort' or 'reliable'
+qos_durability   = 'volatile'     # 'volatile' or 'transient_local'
+
 cur_path = os.path.split(os.path.realpath(__file__))[0] + '/'
 cur_config_path = cur_path + '../config'
 rviz_config_path = os.path.join(cur_config_path, 'livox_lidar.rviz')
@@ -26,6 +32,10 @@ livox_ros2_params = [
     {"output_data_type": output_type},
     {"frame_id": frame_id},
     {"user_config_path": user_config_path},
+    {"qos_history": qos_history},
+    {"qos_depth": qos_depth},
+    {"qos_reliability": qos_reliability},
+    {"qos_durability": qos_durability},
 ]
 
 
