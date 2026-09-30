@@ -55,9 +55,7 @@ git clone https://github.com/Livox-SDK/livox_ros_driver2.git ws_livox/src/livox_
 
 ### 2.2 Build & install the Livox-SDK2
 
-  **Note :**
-
-  Please follow the guidance of installation in the [Livox-SDK2/README.md](https://github.com/Livox-SDK/Livox-SDK2/blob/master/README.md)
+The Livox-SDK2 is provided by the [livox_sdk_vendor](https://github.com/sbgisen/livox_sdk_vendor) ROS 2 package. Clone it next to this package; `colcon build` builds the SDK automatically. (For ROS1 or a manual install, follow the [Livox-SDK2/README.md](https://github.com/Livox-SDK/Livox-SDK2/blob/master/README.md).)
 
 ### 2.3 Build the Livox ROS Driver 2:
 
@@ -79,11 +77,12 @@ source /opt/ros/humble/setup.sh
 ./build.sh humble
 ```
 
-#### For ROS2 Jazzy:
+#### For ROS2 Jazzy (plain colcon workspace with livox_sdk_vendor):
 
 ```shell
 source /opt/ros/jazzy/setup.sh
-./build.sh jazzy
+cd <ros_ws>
+colcon build --packages-up-to livox_ros_driver2
 ```
 
 ### 2.4 Run Livox ROS Driver 2:
