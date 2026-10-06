@@ -69,17 +69,12 @@ catkin_make # or you can use `catkin build`
 
 #### For ROS2
 
-```shell
-cd <ros_ws>
-colcon build --symlink-install
-```
-
-#### For ROS2 Jazzy (plain colcon workspace with livox_sdk_vendor):
+`livox_sdk_vendor` must be in the workspace (see `livox_ros_driver2.repos`).
 
 ```shell
-source /opt/ros/jazzy/setup.sh
+source /opt/ros/<distro>/setup.sh
 cd <ros_ws>
-colcon build --packages-up-to livox_ros_driver2
+colcon build --symlink-install --packages-up-to livox_ros_driver2
 ```
 
 ### 2.4 Run Livox ROS Driver 2:
@@ -605,18 +600,9 @@ Please check the "Global Options - Fixed Frame" field in the RViz "Display" pann
 
 ### 6.2 launch with command "ros2 launch livox_lidar_rviz_HAP_launch.py" but cannot open shared object file "liblivox_sdk_shared.so" ?
 
-Please add '/usr/local/lib' to the env LD_LIBRARY_PATH.
+The SDK library is installed by `livox_sdk_vendor`. Make sure it was built in the same workspace and that the workspace is sourced:
 
-* If you want to add to current terminal:
-
-  ```shell
-  export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
-  ```
-
-* If you want to add to current user:
-
-  ```shell
-  vim ~/.bashrc
-  export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
-  source ~/.bashrc
-  ```
+```shell
+cd <ros_ws>
+source ./install/setup.sh
+```
