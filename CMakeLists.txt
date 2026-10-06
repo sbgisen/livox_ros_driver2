@@ -1,16 +1,23 @@
-# judge which cmake codes to use 
-if(ROS_EDITION STREQUAL "ROS1")
+# judge which cmake codes to use
+if(
+  $ENV{ROS_VERSION}
+  STREQUAL
+  "1"
+)
 
   # Copyright(c) 2019 livoxtech limited.
 
   cmake_minimum_required(VERSION 3.0)
 
-
   #---------------------------------------------------------------------------------------
   # Start livox_ros_driver2 project
   #---------------------------------------------------------------------------------------
   include(cmake/version.cmake)
-  project(livox_ros_driver2 VERSION ${LIVOX_ROS_DRIVER2_VERSION} LANGUAGES CXX)
+  project(
+    livox_ros_driver2
+    VERSION ${LIVOX_ROS_DRIVER2_VERSION}
+    LANGUAGES CXX
+  )
   message(STATUS "livox_ros_driver2 version: ${LIVOX_ROS_DRIVER2_VERSION}")
 
   #---------------------------------------------------------------------------------------
@@ -21,46 +28,47 @@ if(ROS_EDITION STREQUAL "ROS1")
   #---------------------------------------------------------------------------------------
   # find package and the dependecy
   #---------------------------------------------------------------------------------------
-  find_package(Boost 1.54 REQUIRED COMPONENTS
-    system
-    thread
-    chrono
+  find_package(
+    Boost
+    1.54
+    REQUIRED
+    COMPONENTS
+      system
+      thread
+      chrono
   )
 
   ## Find catkin macros and libraries
   ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
   ## is used, also find other catkin packages
-  find_package(catkin REQUIRED COMPONENTS
-    roscpp
-    rospy
-    sensor_msgs
-    std_msgs
-    message_generation
-    rosbag
-    pcl_ros
+  find_package(
+    catkin REQUIRED
+    COMPONENTS
+      roscpp
+      rospy
+      sensor_msgs
+      std_msgs
+      message_generation
+      rosbag
+      pcl_ros
   )
 
   ## Find pcl lib
   find_package(PCL REQUIRED)
 
   ## Generate messages in the 'msg' folder
-  add_message_files(FILES
-    CustomPoint.msg
-    CustomMsg.msg
-  #   Message2.msg
+  add_message_files(FILES CustomPoint.msg CustomMsg.msg #   Message2.msg
   )
 
   ## Generate added messages and services with any dependencies listed here
-  generate_messages(DEPENDENCIES
-    std_msgs
-  )
+  generate_messages(DEPENDENCIES std_msgs)
 
   find_package(PkgConfig)
   pkg_check_modules(APR apr-1)
-  if (APR_FOUND)
+  if(APR_FOUND)
     message(${APR_INCLUDE_DIRS})
     message(${APR_LIBRARIES})
-  endif (APR_FOUND)
+  endif(APR_FOUND)
 
   ###################################
   ## catkin specific configuration ##
@@ -71,16 +79,27 @@ if(ROS_EDITION STREQUAL "ROS1")
   ## LIBRARIES: libraries you create in this project that dependent projects als    o need
   ## CATKIN_DEPENDS: catkin_packages dependent projects also need
   ## DEPENDS: system dependencies of this project that dependent projects also n    eed
-  catkin_package(CATKIN_DEPENDS
-    roscpp rospy std_msgs message_runtime
-    pcl_ros
+  catkin_package(
+    CATKIN_DEPENDS
+      roscpp
+      rospy
+      std_msgs
+      message_runtime
+      pcl_ros
   )
 
   #---------------------------------------------------------------------------------------
   # Set default build to release
   #---------------------------------------------------------------------------------------
   if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose Release or Debug" FORCE)
+    set(
+      CMAKE_BUILD_TYPE
+      "Release"
+      CACHE
+        STRING
+        "Choose Release or Debug"
+        FORCE
+    )
   endif()
 
   #---------------------------------------------------------------------------------------
@@ -91,7 +110,19 @@ if(ROS_EDITION STREQUAL "ROS1")
   set(CMAKE_CXX_EXTENSIONS OFF)
 
   ## make sure the livox_lidar_sdk_static library is installed
-  find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    /usr/local/lib)
+  # Use prebuild livox sdk
+  if(
+    ${CMAKE_SYSTEM_PROCESSOR}
+    STREQUAL
+    "x86_64"
+  )
+    set(LIVOX_LIDAR_SDK_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/livox_sdk/lib/x86_64/liblivox_lidar_sdk_static.a)
+  else()
+    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+
+  ## livox sdk include dir
+  set(LIVOX_LIDAR_SDK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/livox_sdk/include)
 
   ## PCL library
   link_directories(${PCL_LIBRARY_DIRS})
@@ -100,16 +131,12 @@ if(ROS_EDITION STREQUAL "ROS1")
   #---------------------------------------------------------------------------------------
   # generate excutable and add libraries
   #---------------------------------------------------------------------------------------
-  add_executable(${PROJECT_NAME}_node
-    ""
-  )
+  add_executable(${PROJECT_NAME}_node "")
 
   #---------------------------------------------------------------------------------------
   # precompile macro and compile option
   #---------------------------------------------------------------------------------------
-  target_compile_options(${PROJECT_NAME}_node
-    PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>
-  )
+  target_compile_options(${PROJECT_NAME}_node PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>)
 
   #---------------------------------------------------------------------------------------
   # add projects that depend on
@@ -119,44 +146,45 @@ if(ROS_EDITION STREQUAL "ROS1")
   #---------------------------------------------------------------------------------------
   # source file
   #---------------------------------------------------------------------------------------
-  target_sources(${PROJECT_NAME}_node
+  target_sources(
+    ${PROJECT_NAME}_node
     PRIVATE
-    src/driver_node.cpp
-    src/lds.cpp
-    src/lds_lidar.cpp
-    src/lddc.cpp
-    src/livox_ros_driver2.cpp
-
-    src/comm/comm.cpp
-    src/comm/ldq.cpp
-    src/comm/semaphore.cpp
-    src/comm/lidar_imu_data_queue.cpp
-    src/comm/cache_index.cpp
-    src/comm/pub_handler.cpp
-
-    src/parse_cfg_file/parse_cfg_file.cpp
-    src/parse_cfg_file/parse_livox_lidar_cfg.cpp
-
-    src/call_back/lidar_common_callback.cpp
-    src/call_back/livox_lidar_callback.cpp
+      src/driver_node.cpp
+      src/lds.cpp
+      src/lds_lidar.cpp
+      src/lddc.cpp
+      src/livox_ros_driver2.cpp
+      src/comm/comm.cpp
+      src/comm/ldq.cpp
+      src/comm/semaphore.cpp
+      src/comm/lidar_imu_data_queue.cpp
+      src/comm/cache_index.cpp
+      src/comm/pub_handler.cpp
+      src/parse_cfg_file/parse_cfg_file.cpp
+      src/parse_cfg_file/parse_livox_lidar_cfg.cpp
+      src/call_back/lidar_common_callback.cpp
+      src/call_back/livox_lidar_callback.cpp
   )
 
   #---------------------------------------------------------------------------------------
   # include file
   #---------------------------------------------------------------------------------------
-  target_include_directories(${PROJECT_NAME}_node
+  target_include_directories(
+    ${PROJECT_NAME}_node
     PUBLIC
-    ${catkin_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
-    ${APR_INCLUDE_DIRS}
-    3rdparty
-    src
+      ${catkin_INCLUDE_DIRS}
+      ${LIVOX_LIDAR_SDK_INCLUDE_DIR}
+      ${PCL_INCLUDE_DIRS}
+      ${APR_INCLUDE_DIRS}
+      3rdparty
+      src
   )
 
   #---------------------------------------------------------------------------------------
   # link libraries
   #---------------------------------------------------------------------------------------
-  target_link_libraries(${PROJECT_NAME}_node
+  target_link_libraries(
+    ${PROJECT_NAME}_node
     ${LIVOX_LIDAR_SDK_LIBRARY}
     ${Boost_LIBRARY}
     ${catkin_LIBRARIES}
@@ -164,27 +192,28 @@ if(ROS_EDITION STREQUAL "ROS1")
     ${APR_LIBRARIES}
   )
 
-
   #---------------------------------------------------------------------------------------
   # Install
   #---------------------------------------------------------------------------------------
 
-  install(TARGETS ${PROJECT_NAME}_node
+  install(
+    TARGETS ${PROJECT_NAME}_node
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
 
-  install(DIRECTORY launch_ROS1/
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch_ROS1
-  )
+  install(DIRECTORY launch_ROS1/ DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch_ROS1)
 
   #---------------------------------------------------------------------------------------
   # end of CMakeList.txt
   #---------------------------------------------------------------------------------------
 
-
-else(ROS_EDITION STREQUAL "ROS2")
+else(
+  $ENV{ROS_VERSION}
+  STREQUAL
+  "2"
+)
 
   # Copyright(c) 2020 livoxtech limited.
 
@@ -201,15 +230,35 @@ else(ROS_EDITION STREQUAL "ROS2")
     set(CMAKE_CXX_STANDARD 14)
   endif()
 
-  list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/cmake/modules")
+  list(
+    INSERT
+    CMAKE_MODULE_PATH
+    0
+    "${PROJECT_SOURCE_DIR}/cmake/modules"
+  )
 
-  if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic -Wno-unused-parameter)
+  if(
+    CMAKE_COMPILER_IS_GNUCXX
+    OR
+      CMAKE_CXX_COMPILER_ID
+      MATCHES
+      "Clang"
+  )
+    add_compile_options(
+      -Wall
+      -Wextra
+      -Wpedantic
+      -Wno-unused-parameter
+    )
   endif()
 
   # Printf version info
   include(cmake/version.cmake)
-  project(${PROJECT_NAME} VERSION ${LIVOX_ROS_DRIVER2_VERSION} LANGUAGES CXX)
+  project(
+    ${PROJECT_NAME}
+    VERSION ${LIVOX_ROS_DRIVER2_VERSION}
+    LANGUAGES CXX
+  )
   message(STATUS "${PROJECT_NAME} version: ${LIVOX_ROS_DRIVER2_VERSION}")
 
   #---------------------------------------------------------------------------------------
@@ -231,50 +280,59 @@ else(ROS_EDITION STREQUAL "ROS2")
   # check apr
   find_package(PkgConfig)
   pkg_check_modules(APR apr-1)
-  if (APR_FOUND)
+  if(APR_FOUND)
     message(${APR_INCLUDE_DIRS})
     message(${APR_LIBRARIES})
-  endif (APR_FOUND)
+  endif(APR_FOUND)
 
   # generate custom msg headers
   set(LIVOX_INTERFACES livox_interfaces2)
-  rosidl_generate_interfaces(${LIVOX_INTERFACES}
+  rosidl_generate_interfaces(
+    ${LIVOX_INTERFACES}
     "msg/CustomPoint.msg"
     "msg/CustomMsg.msg"
-    DEPENDENCIES builtin_interfaces std_msgs
-    LIBRARY_NAME ${PROJECT_NAME}
+    DEPENDENCIES
+    builtin_interfaces
+    std_msgs
+    LIBRARY_NAME
+    ${PROJECT_NAME}
   )
 
-  ## make sure the livox_lidar_sdk_shared library is installed
-  find_library(LIVOX_LIDAR_SDK_LIBRARY liblivox_lidar_sdk_shared.so /usr/local/lib REQUIRED)
+  # Use prebuild livox sdk
+  if(
+    ${CMAKE_SYSTEM_PROCESSOR}
+    STREQUAL
+    "x86_64"
+  )
+    set(LIVOX_LIDAR_SDK_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/livox_sdk/lib/x86_64/liblivox_lidar_sdk_static.a)
+  else()
+    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
 
-  ##
-  find_path(LIVOX_LIDAR_SDK_INCLUDE_DIR
-    NAMES "livox_lidar_api.h" "livox_lidar_def.h"
-    REQUIRED)
+  ## livox sdk include dir
+  set(LIVOX_LIDAR_SDK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/livox_sdk/include)
 
   ## PCL library
   link_directories(${PCL_LIBRARY_DIRS})
   add_definitions(${PCL_DEFINITIONS})
 
   # livox ros2 driver target
-  ament_auto_add_library(${PROJECT_NAME} SHARED
+  ament_auto_add_library(
+    ${PROJECT_NAME}
+    SHARED
     src/livox_ros_driver2.cpp
     src/lddc.cpp
     src/driver_node.cpp
     src/lds.cpp
     src/lds_lidar.cpp
-
     src/comm/comm.cpp
     src/comm/ldq.cpp
     src/comm/semaphore.cpp
     src/comm/lidar_imu_data_queue.cpp
     src/comm/cache_index.cpp
     src/comm/pub_handler.cpp
-
     src/parse_cfg_file/parse_cfg_file.cpp
     src/parse_cfg_file/parse_livox_lidar_cfg.cpp
-
     src/call_back/lidar_common_callback.cpp
     src/call_back/livox_lidar_callback.cpp
   )
@@ -292,32 +350,42 @@ else(ROS_EDITION STREQUAL "ROS2")
   else()
     set(LIVOX_INTERFACE_TARGET "${LIVOX_INTERFACES}__rosidl_typesupport_cpp")
     add_dependencies(${PROJECT_NAME} ${LIVOX_INTERFACES})
-    get_target_property(LIVOX_INTERFACES_INCLUDE_DIRECTORIES ${LIVOX_INTERFACE_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(
+      LIVOX_INTERFACES_INCLUDE_DIRECTORIES
+      ${LIVOX_INTERFACE_TARGET}
+      INTERFACE_INCLUDE_DIRECTORIES
+    )
   endif()
 
   # include file direcotry
-  target_include_directories(${PROJECT_NAME} PUBLIC
-    ${PCL_INCLUDE_DIRS}
-    ${APR_INCLUDE_DIRS}
-    ${LIVOX_LIDAR_SDK_INCLUDE_DIR}
-    ${LIVOX_INTERFACES_INCLUDE_DIRECTORIES}   # for custom msgs
-    3rdparty
-    src
+  target_include_directories(
+    ${PROJECT_NAME}
+    PUBLIC
+      ${PCL_INCLUDE_DIRS}
+      ${APR_INCLUDE_DIRS}
+      ${LIVOX_LIDAR_SDK_INCLUDE_DIR}
+      ${LIVOX_INTERFACES_INCLUDE_DIRECTORIES} # for custom msgs
+      3rdparty
+      src
   )
 
   # link libraries
-  target_link_libraries(${PROJECT_NAME}
+  target_link_libraries(
+    ${PROJECT_NAME}
     ${LIVOX_LIDAR_SDK_LIBRARY}
-    ${LIVOX_INTERFACE_TARGET}   # for custom msgs
+    ${LIVOX_INTERFACE_TARGET} # for custom msgs
     ${PPT_LIBRARY}
     ${Boost_LIBRARY}
     ${PCL_LIBRARIES}
     ${APR_LIBRARIES}
   )
 
-  rclcpp_components_register_node(${PROJECT_NAME}
-    PLUGIN "livox_ros::DriverNode"
-    EXECUTABLE ${PROJECT_NAME}_node
+  rclcpp_components_register_node(
+    ${PROJECT_NAME}
+    PLUGIN
+    "livox_ros::DriverNode"
+    EXECUTABLE
+    ${PROJECT_NAME}_node
   )
 
   if(BUILD_TESTING)
@@ -331,7 +399,8 @@ else(ROS_EDITION STREQUAL "ROS2")
     ament_lint_auto_find_test_dependencies()
   endif()
 
-  ament_auto_package(INSTALL_TO_SHARE
+  ament_auto_package(
+    INSTALL_TO_SHARE
     config
     launch_ROS2
   )
