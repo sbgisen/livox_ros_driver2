@@ -1,0 +1,5 @@
+repositories:
+  livox_sdk_vendor:
+    type: git
+    url: git@github.com:sbgisen/livox_sdk_vendor.git
+    version: jazzy-devel

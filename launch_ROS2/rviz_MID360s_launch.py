@@ -11,17 +11,13 @@ data_src      = 0    # 0-lidar, others-Invalid data src
 publish_freq  = 10.0 # freqency of publish, 5.0, 10.0, 20.0, 50.0, etc.
 output_type   = 0
 frame_id      = 'livox_frame'
-
-# QoS settings for pointcloud publishers
-qos_history      = 'keep_last'    # 'keep_last' or 'keep_all'
-qos_depth        = 10             # Queue depth for keep_last
-qos_reliability  = 'best_effort'  # 'best_effort' or 'reliable'
-qos_durability   = 'volatile'     # 'volatile' or 'transient_local'
+lvx_file_path = '/home/livox/livox_test.lvx'
+cmdline_bd_code = 'livox0000000001'
 
 cur_path = os.path.split(os.path.realpath(__file__))[0] + '/'
 cur_config_path = cur_path + '../config'
 rviz_config_path = os.path.join(cur_config_path, 'display_point_cloud_ROS2.rviz')
-user_config_path = os.path.join(cur_config_path, 'MID360_config.json')
+user_config_path = os.path.join(cur_config_path, 'MID360s_config.json')
 ################### user configure parameters for ros2 end #####################
 
 livox_ros2_params = [
@@ -31,11 +27,9 @@ livox_ros2_params = [
     {"publish_freq": publish_freq},
     {"output_data_type": output_type},
     {"frame_id": frame_id},
+    {"lvx_file_path": lvx_file_path},
     {"user_config_path": user_config_path},
-    {"qos_history": qos_history},
-    {"qos_depth": qos_depth},
-    {"qos_reliability": qos_reliability},
-    {"qos_durability": qos_durability},
+    {"cmdline_input_bd_code": cmdline_bd_code}
 ]
 
 

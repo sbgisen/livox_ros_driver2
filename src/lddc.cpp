@@ -28,6 +28,7 @@
 
 #include <inttypes.h>
 #include <iostream>
+#include <iomanip>
 #include <math.h>
 #include <stdint.h>
 
@@ -61,13 +62,18 @@ Lddc::Lddc(int format, int multi_topic, int data_src, int output_type,
 }
 #elif defined BUILDING_ROS2
 Lddc::Lddc(int format, int multi_topic, int data_src, int output_type,
-           double frq, std::string &frame_id)
+           double frq, std::string &frame_id, std::string qos_history,
+           int qos_depth, std::string qos_reliability, std::string qos_durability)
     : transfer_format_(format),
       use_multi_topic_(multi_topic),
       data_src_(data_src),
       output_type_(output_type),
       publish_frq_(frq),
-      frame_id_(frame_id) {
+      frame_id_(frame_id),
+      qos_history_(qos_history),
+      qos_depth_(qos_depth),
+      qos_reliability_(qos_reliability),
+      qos_durability_(qos_durability) {
   publish_period_ns_ = kNsPerSecond / publish_frq_;
   lds_ = nullptr;
 #if 0
@@ -262,7 +268,7 @@ void Lddc::InitPointcloud2MsgHeader(PointCloud2& cloud) {
   cloud.header.frame_id.assign(frame_id_);
   cloud.height = 1;
   cloud.width = 0;
-  cloud.fields.resize(6);
+  cloud.fields.resize(7);
   cloud.fields[0].offset = 0;
   cloud.fields[0].name = "x";
   cloud.fields[0].count = 1;
@@ -287,13 +293,17 @@ void Lddc::InitPointcloud2MsgHeader(PointCloud2& cloud) {
   cloud.fields[5].name = "line";
   cloud.fields[5].count = 1;
   cloud.fields[5].datatype = PointField::UINT8;
-  cloud.point_step = sizeof(LivoxPointXyzrtl);
+  cloud.fields[6].offset = 18;
+  cloud.fields[6].name = "timestamp";
+  cloud.fields[6].count = 1;
+  cloud.fields[6].datatype = PointField::FLOAT64;
+  cloud.point_step = sizeof(LivoxPointXyzrtlt);
 }
 
 void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint64_t& timestamp) {
   InitPointcloud2MsgHeader(cloud);
 
-  cloud.point_step = sizeof(LivoxPointXyzrtl);
+  cloud.point_step = sizeof(LivoxPointXyzrtlt);
 
   cloud.width = pkg.points_num;
   cloud.row_step = cloud.width * cloud.point_step;
@@ -302,7 +312,7 @@ void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint
   cloud.is_dense     = true;
 
   if (!pkg.points.empty()) {
-    timestamp = pkg.base_time + pkg.points[0].offset_time;
+    timestamp = pkg.base_time;
   }
 
   #ifdef BUILDING_ROS1
@@ -311,20 +321,20 @@ void Lddc::InitPointcloud2Msg(const StoragePacket& pkg, PointCloud2& cloud, uint
       cloud.header.stamp = rclcpp::Time(timestamp);
   #endif
 
-  std::vector<LivoxPointXyzrtl> points;
+  std::vector<LivoxPointXyzrtlt> points;
   for (size_t i = 0; i < pkg.points_num; ++i) {
-    LivoxPointXyzrtl point;
+    LivoxPointXyzrtlt point;
     point.x = pkg.points[i].x;
     point.y = pkg.points[i].y;
     point.z = pkg.points[i].z;
     point.reflectivity = pkg.points[i].intensity;
     point.tag = pkg.points[i].tag;
     point.line = pkg.points[i].line;
-
+    point.timestamp = static_cast<double>(pkg.points[i].offset_time);
     points.push_back(std::move(point));
   }
-  cloud.data.resize(pkg.points_num * sizeof(LivoxPointXyzrtl));
-  memcpy(cloud.data.data(), points.data(), pkg.points_num * sizeof(LivoxPointXyzrtl));
+  cloud.data.resize(pkg.points_num * sizeof(LivoxPointXyzrtlt));
+  memcpy(cloud.data.data(), points.data(), pkg.points_num * sizeof(LivoxPointXyzrtlt));
 }
 
 void Lddc::PublishPointcloud2Data(const uint8_t index, const uint64_t timestamp, const PointCloud2& cloud) {
@@ -357,7 +367,7 @@ void Lddc::InitCustomMsg(CustomMsg& livox_msg, const StoragePacket& pkg, uint8_t
 
   uint64_t timestamp = 0;
   if (!pkg.points.empty()) {
-    timestamp = pkg.base_time + pkg.points[0].offset_time;
+    timestamp = pkg.base_time;
   }
   livox_msg.timebase = timestamp;
 
@@ -387,7 +397,7 @@ void Lddc::FillPointsToCustomMsg(CustomMsg& livox_msg, const StoragePacket& pkg)
     point.reflectivity = points[i].intensity;
     point.tag = points[i].tag;
     point.line = points[i].line;
-    point.offset_time = static_cast<uint32_t>(points[i].offset_time);
+    point.offset_time = static_cast<uint32_t>(points[i].offset_time - pkg.base_time);
 
     livox_msg.points.push_back(std::move(point));
   }
@@ -418,7 +428,7 @@ void Lddc::InitPclMsg(const StoragePacket& pkg, PointCloud& cloud, uint64_t& tim
   cloud.width = pkg.points_num;
 
   if (!pkg.points.empty()) {
-    timestamp = pkg.base_time + pkg.points[0].offset_time;
+    timestamp = pkg.base_time;
   }
   cloud.header.stamp = timestamp / 1000.0;  // to pcl ros time stamp
 #elif defined BUILDING_ROS2
@@ -521,27 +531,53 @@ void Lddc::PublishImuData(LidarImuDataQueue& imu_data_queue, const uint8_t index
 #ifdef BUILDING_ROS2
 std::shared_ptr<rclcpp::PublisherBase> Lddc::CreatePublisher(uint8_t msg_type,
     std::string &topic_name, uint32_t queue_size) {
+    // Build QoS profile from configuration
+    rclcpp::QoS qos_profile(qos_depth_);
+
+    // Set history policy
+    if (qos_history_ == "keep_all") {
+      qos_profile.keep_all();
+    } else {
+      qos_profile.keep_last(qos_depth_);
+    }
+
+    // Set reliability
+    if (qos_reliability_ == "reliable") {
+      qos_profile.reliable();
+    } else if (qos_reliability_ == "best_effort") {
+      qos_profile.best_effort();
+    }
+
+    // Set durability
+    if (qos_durability_ == "transient_local") {
+      qos_profile.transient_local();
+    } else if (qos_durability_ == "volatile") {
+      qos_profile.durability_volatile();
+    }
+
     if (kPointCloud2Msg == msg_type) {
       DRIVER_INFO(*cur_node_,
-          "%s publish use PointCloud2 format", topic_name.c_str());
-      return cur_node_->create_publisher<PointCloud2>(topic_name, queue_size);
+          "%s publish use PointCloud2 format with QoS: reliability=%s, durability=%s, depth=%d",
+          topic_name.c_str(), qos_reliability_.c_str(), qos_durability_.c_str(), qos_depth_);
+      return cur_node_->create_publisher<PointCloud2>(topic_name, qos_profile);
     } else if (kLivoxCustomMsg == msg_type) {
       DRIVER_INFO(*cur_node_,
-          "%s publish use livox custom format", topic_name.c_str());
-      return cur_node_->create_publisher<CustomMsg>(topic_name, queue_size);
+          "%s publish use livox custom format with QoS: reliability=%s, durability=%s, depth=%d",
+          topic_name.c_str(), qos_reliability_.c_str(), qos_durability_.c_str(), qos_depth_);
+      return cur_node_->create_publisher<CustomMsg>(topic_name, qos_profile);
     }
 #if 0
     else if (kPclPxyziMsg == msg_type)  {
       DRIVER_INFO(*cur_node_,
           "%s publish use pcl PointXYZI format", topic_name.c_str());
-      return cur_node_->create_publisher<PointCloud>(topic_name, queue_size);
+      return cur_node_->create_publisher<PointCloud>(topic_name, qos_profile);
     }
 #endif
     else if (kLivoxImuMsg == msg_type)  {
       DRIVER_INFO(*cur_node_,
-          "%s publish use imu format", topic_name.c_str());
-      return cur_node_->create_publisher<ImuMsg>(topic_name,
-          queue_size);
+          "%s publish use imu format with QoS: reliability=%s, durability=%s, depth=%d",
+          topic_name.c_str(), qos_reliability_.c_str(), qos_durability_.c_str(), qos_depth_);
+      return cur_node_->create_publisher<ImuMsg>(topic_name, qos_profile);
     } else {
       PublisherPtr null_publisher(nullptr);
       return null_publisher;

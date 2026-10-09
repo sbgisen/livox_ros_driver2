@@ -76,7 +76,9 @@ class Lddc final {
       std::string &frame_id, bool lidar_bag, bool imu_bag);
 #elif defined BUILDING_ROS2
   Lddc(int format, int multi_topic, int data_src, int output_type, double frq,
-      std::string &frame_id);
+      std::string &frame_id, std::string qos_history = "keep_last",
+      int qos_depth = 10, std::string qos_reliability = "best_effort",
+      std::string qos_durability = "volatile");
 #endif
   ~Lddc();
 
@@ -120,8 +122,8 @@ class Lddc final {
 
   void InitImuMsg(const ImuData& imu_data, ImuMsg& imu_msg, uint64_t& timestamp);
 
-  void FillPointsToPclMsg(PointCloud& pcl_msg, LivoxPointXyzrtl* src_point, uint32_t num);
-  void FillPointsToCustomMsg(CustomMsg& livox_msg, LivoxPointXyzrtl* src_point, uint32_t num,
+  void FillPointsToPclMsg(PointCloud& pcl_msg, LivoxPointXyzrtlt* src_point, uint32_t num);
+  void FillPointsToCustomMsg(CustomMsg& livox_msg, LivoxPointXyzrtlt* src_point, uint32_t num,
       uint32_t offset_time, uint32_t point_interval, uint32_t echo_num);
 
 #ifdef BUILDING_ROS2
@@ -149,6 +151,10 @@ class Lddc final {
   PublisherPtr global_imu_pub_;
   rosbag::Bag *bag_;
 #elif defined BUILDING_ROS2
+  std::string qos_history_;
+  int qos_depth_;
+  std::string qos_reliability_;
+  std::string qos_durability_;
   PublisherPtr private_pub_[kMaxSourceLidar];
   PublisherPtr global_pub_;
   PublisherPtr private_imu_pub_[kMaxSourceLidar];

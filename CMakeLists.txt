@@ -298,19 +298,21 @@ else(
     ${PROJECT_NAME}
   )
 
-  # Use prebuild livox sdk
-  if(
-    ${CMAKE_SYSTEM_PROCESSOR}
-    STREQUAL
-    "x86_64"
+  ## Livox-SDK2 is provided by livox_sdk_vendor (on CMAKE_PREFIX_PATH)
+  find_library(
+    LIVOX_LIDAR_SDK_LIBRARY
+    liblivox_lidar_sdk_shared.so
+    REQUIRED
   )
-    set(LIVOX_LIDAR_SDK_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/livox_sdk/lib/x86_64/liblivox_lidar_sdk_static.a)
-  else()
-    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_PROCESSOR}")
-  endif()
 
   ## livox sdk include dir
-  set(LIVOX_LIDAR_SDK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/livox_sdk/include)
+  find_path(
+    LIVOX_LIDAR_SDK_INCLUDE_DIR
+    NAMES
+      "livox_lidar_api.h"
+      "livox_lidar_def.h"
+    REQUIRED
+  )
 
   ## PCL library
   link_directories(${PCL_LIBRARY_DIRS})
@@ -336,21 +338,18 @@ else(
     src/call_back/lidar_common_callback.cpp
     src/call_back/livox_lidar_callback.cpp
   )
+
   add_executable(pointcloud_forwarder src/pointcloud_forwarder.cpp)
-  ament_target_dependencies(
-    pointcloud_forwarder
-    rclcpp
-    sensor_msgs
-  )
+  ament_target_dependencies(pointcloud_forwarder rclcpp sensor_msgs)
 
   target_include_directories(${PROJECT_NAME} PRIVATE ${livox_sdk_INCLUDE_DIRS})
 
   # get include directories of custom msg headers
-  if(
-    $ENV{ROS_DISTRO}
-    STREQUAL
-    "foxy"
-  )
+  if("$ENV{ROS_DISTRO}" STREQUAL "humble" OR "$ENV{ROS_DISTRO}" STREQUAL "jazzy")
+    rosidl_get_typesupport_target(cpp_typesupport_target
+    ${LIVOX_INTERFACES} "rosidl_typesupport_cpp")
+    target_link_libraries(${PROJECT_NAME} "${cpp_typesupport_target}")
+  else()
     set(LIVOX_INTERFACE_TARGET "${LIVOX_INTERFACES}__rosidl_typesupport_cpp")
     add_dependencies(${PROJECT_NAME} ${LIVOX_INTERFACES})
     get_target_property(
@@ -358,13 +357,6 @@ else(
       ${LIVOX_INTERFACE_TARGET}
       INTERFACE_INCLUDE_DIRECTORIES
     )
-  else()
-    rosidl_get_typesupport_target(
-      cpp_typesupport_target
-      ${LIVOX_INTERFACES}
-      "rosidl_typesupport_cpp"
-    )
-    target_link_libraries(${PROJECT_NAME} "${cpp_typesupport_target}")
   endif()
 
   # include file direcotry
@@ -414,5 +406,7 @@ else(
     config
     launch_ROS2
   )
+
   install(TARGETS pointcloud_forwarder DESTINATION lib/${PROJECT_NAME})
+
 endif()

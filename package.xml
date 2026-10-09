@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
     <name>livox_ros_driver2</name>
     <version>1.0.0</version>
-    <description>The ROS device driver for Livox 3D LiDARs</description>
+    <description>The ROS device driver for Livox 3D LiDARs, for ROS2</description>
     <maintainer email="dev@livoxtech.com">feng</maintainer>
     <license>MIT</license>
 
@@ -25,6 +26,8 @@
     <depend condition="$ROS_VERSION == 2">rclcpp_components</depend>
     <depend condition="$ROS_VERSION == 2">rcl_interfaces</depend>
     <depend condition="$ROS_VERSION == 2">rcutils</depend>
+    <depend condition="$ROS_VERSION == 2">libpcl-all-dev</depend>
+    <depend condition="$ROS_VERSION == 2">livox_sdk_vendor</depend>
     <exec_depend condition="$ROS_VERSION == 2">rosbag2</exec_depend>
     <exec_depend condition="$ROS_VERSION == 2">rosidl_default_runtime</exec_depend>
     <test_depend condition="$ROS_VERSION == 2">ament_lint_auto</test_depend>
